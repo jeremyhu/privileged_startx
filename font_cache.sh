@@ -212,11 +212,11 @@ setup_font_dirs() {
 }
 
 # TODO: Make this more sexy
-if [[ $1 == "-s" -o $2 == "-s"]] ; then
+if [[ $1 == "-s" || $2 == "-s" ]] ; then
 	system=1
 fi
 
-if [[ $1 == "-f" -o $2 == "-f"]] ; then
+if [[ $1 == "-f" || $2 == "-f" ]] ; then
 	force=1
 fi
 
