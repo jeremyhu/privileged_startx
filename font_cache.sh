@@ -8,6 +8,7 @@ X11FONTDIR=${X11DIR}/lib/X11/fonts
 
 # System fonts or user fonts?
 system=0
+force=0
 
 # Return 0 on change, or 1 on no change, or if dir do not exist
 check_changed() {
@@ -17,6 +18,10 @@ check_changed() {
 	# If the dir do not exist, e
 	if [[ ! -d $1 ]]; then
 		return 1
+	fi
+
+	if [[ ${force} == 1 ]] ; then
+		return 0
 	fi
 
 	# Create a list of all non known config files in the font dir
@@ -149,11 +154,17 @@ setup_font_dirs() {
 			if [ "${x/encodings}" = "${x}" -a \
 			     -n "$(find ${x} -iname '*.tt[cf]' -print)" ]
 			then
-				${X11DIR}/bin/ttmkfdir -x 2 \
-					-e ${X11FONTDIR}/encodings/encodings.dir \
-					-o ${x}/fonts.scale -d ${x} > /dev/null
-				# ttmkfdir fails on some stuff, so try mkfontscale if it does
-				local ttmkfdir_return=$?
+
+				if [ -x "${X11DIR}/bin/ttmkfdir" ] ; then
+					${X11DIR}/bin/ttmkfdir -x 2 \
+						-e ${X11FONTDIR}/encodings/encodings.dir \
+						-o ${x}/fonts.scale -d ${x} > /dev/null
+					# ttmkfdir fails on some stuff, so try mkfontscale if it does
+					local ttmkfdir_return=$?
+				else
+					ttmkfdir_return=1
+				fi
+
 				if [ ${ttmkfdir_return} -ne 0 ]
 				then
 					${X11DIR}/bin/mkfontscale \
@@ -193,15 +204,20 @@ setup_font_dirs() {
 	# While we at it, update fontconfig's cache as well
 	echo "font_cache.sh: Updating FC cache"
 	if [[ $system == 1 ]] ; then
-		HOME="$(echo ~root)" ${X11DIR}/bin/fc-cache
+		HOME="$(echo ~root)" ${X11DIR}/bin/fc-cache $([[ $force == 1 ]] && echo "-f -r")
 	else
-		${X11DIR}/bin/fc-cache
+		${X11DIR}/bin/fc-cache $([[ $force == 1 ]] && echo "-f -r")
 	fi
 	echo "font_cache.sh: Done"
 }
 
-if [[ $1 == "-s" ]] ; then
+# TODO: Make this more sexy
+if [[ $1 == "-s" -o $2 == "-s"]] ; then
 	system=1
+fi
+
+if [[ $1 == "-f" -o $2 == "-f"]] ; then
+	force=1
 fi
 
 setup_font_dirs "${@}"
